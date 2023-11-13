@@ -37,10 +37,20 @@ df = df.explode('text')
 # df = df.dropna(subset=['text'])
 df['text'] = df['text'].fillna('')
 df = df.reset_index(drop=True)
-st.title("Welcome to reSearchable.\n**The local reSearch engine.**")
+st.title("Welcome to streamSearchable\n**Your local reSearch engine**")
 
 
 st.header("Query your data here:")
+index_folder = Path('data/indexes')
+index_name = 'index.tar.gz'
+available_indexes = list()
+for _collection in index_folder.glob('*'):
+    if _collection.is_dir():
+        if _collection.joinpath(index_name).exists():
+            available_indexes.append(_collection.name)
+
+index_to_search = st.selectbox(label='Available Indexes', options=available_indexes)
+
 query = st.text_input(label="What do you want to search?", value='')
 
 st.session_state['query'] = query
@@ -65,10 +75,15 @@ def search_df(query):
     return query_results
 
 @st.cache_data
-def remote_search(query):
-    results = requests.get('http://localhost:8000/vec_query',
-                           params={'query':query})
-    return results.json()
+def remote_search(query, collection_name):
+    results = requests.post('http://localhost:8000/query',
+                           json={'query':query, 'collection_name':collection_name})
+    cleaned_results = list()
+    for row in results.json():
+        org_data = json.loads(row['data'])
+        org_data['score'] = row['score']
+        cleaned_results.append(org_data)
+    return cleaned_results
 
 with st.sidebar:
     current_buckets = [x for x in buckets_folder.glob('*') if x.is_dir()]
@@ -86,37 +101,39 @@ with st.sidebar:
 
 if query:
     # query_results = search_df(query)
-    query_results = remote_search(query)
+    query_results = remote_search(query, index_to_search)
     # for index, result in query_results.head().iterrows():
     for index, result in enumerate(query_results):
+        # st.write(result)
         st.markdown(f"**:blue[{result['title']}]**")
+        st.markdown(f"*:blue[Score: {round(result['score'], 3)}]*")
         with st.container():
-            st.write(result['text'][:100])
+            st.write(f"{' '.join(result['text'].split(' ')[:50])}...")
             save_to_bucket = st.toggle('Save to bucket',key=f'toggle_{index}')
             if save_to_bucket:
                 for _bucket in selected_buckets:
                     _path = buckets_folder.joinpath(_bucket)
                     with open(_path.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json'),'w') as f:
                         json.dump(result, f)
-            with st.expander('See text'):
+            with st.expander('See Full Text and Details'):
                 full_text, quick_annotate = st.columns([4,1])
                 with full_text:
-                    st.write(result['text'])
+                    st.markdown(f"**Type:** {result['document_type']}")
+                    st.markdown(f"**Author:** {result['document_author']}")
+                    st.markdown(f"**Date:** {result['publish_date']}")
+                    st.markdown(f"**Tags:** {result['tags']}")
+                    st.divider()
+                    st.markdown('\n\n'.join(result['text'].split('\n')))
                 with quick_annotate:
-                    quick_note = st.text_area('quickly annotate', key=f'text_{index}')
-                    if st.button('save quick annotation', key=f'fast_annotate_{index}'):
+                    quick_note = st.text_area('Quick Annotation', key=f'text_{index}')
+                    if st.button('Save', key=f'fast_annotate_{index}'):
                         fast_note = result.copy()
-                        fast_note['note'] = quick_note
+                        fast_note['quick_note'] = quick_note
                         for _bucket in selected_buckets:
                             _path = buckets_folder.joinpath(_bucket)
                             with open(_path.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json'),'w') as f:
                                 json.dump(fast_note, f)
                                 
-            annotate_button = st.button("Annotate this", key=f'annotate_{index}')
-            if annotate_button:
-                st.session_state['note'] = store_note(result)
-                with open(tmp_folder.joinpath('tmp_note.json'),'w') as f:
-                    json.dump(result, f)
         st.divider()
 
 ## Write a basic in memory search of the documents

@@ -110,6 +110,10 @@ for bucket_index, bucket in enumerate(selected_buckets):
                     text_col, note_col = st.columns([2,1])
                     with text_col:
                         for key, value in tmp_note.items():
+                            if key == 'text':
+                                st.caption(key)
+                                st.markdown('\n\n'.join(value.split('\n')))
+                                continue
                             st.caption(key)
                             st.write(value)
                     with note_col:
