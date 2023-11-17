@@ -1,0 +1,7 @@
+{
+  "entity_extractor": "en_core_web_lg",
+  "keyphrase_spacy": "en_core_web_lg",
+  "keyphrase_vectorizer": "all-MiniLM-L6-v2",
+  "gpt_summarizer": "orca-mini-3b-gguf2-q4_0.gguf",
+  "gpt_gpu": true
+}

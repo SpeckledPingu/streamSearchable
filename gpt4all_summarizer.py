@@ -19,7 +19,7 @@ model = GPT4All("orca-mini-3b-gguf2-q4_0.gguf", device='gpu')
 kw_model = KeyBERT()
 vectorizer = KeyphraseCountVectorizer()
 
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_lg")
 
 class Text(BaseModel):
     text: str
@@ -41,9 +41,8 @@ def summarize_text(text: Text):
 
 @app.post("/phrases")
 def summarize_text(text: Text):
-    print(text)
     phrases = kw_model.extract_keywords(docs=text.text, vectorizer=vectorizer)
-    return {'phrases':phrases}
+    return {'phrases':','.join([x[0] for x in phrases])}
 
 @app.post("/ner")
 def ner_extract(text: Text):
@@ -51,13 +50,9 @@ def ner_extract(text: Text):
     # nlp.add_pipe("merge_entities")
     # nlp.add_pipe("merge_noun_chunks")
     entities = defaultdict(list)
-    print(text.text)
     for token in doc.ents:
         _token_tag = token.label_
         entities[_token_tag].append(token.text)
-        print(f"{_token_tag} : {token.text}")
-    print(entities)
     for _label, _ent in entities.items():
         entities[_label] = list(set(entities[_label]))
-    print(entities)
     return {'entities':entities}

@@ -9,7 +9,7 @@ st.set_page_config(layout='wide',
                   page_title='Upload')
 
 
-data_folder = Path('data/source')
+data_folder = Path('data/collections')
 config_file = Path('data/config/indexed.json')
 current_buckets = [x.name for x in data_folder.glob('*') if x.is_dir()]
 current_buckets = [x for x in current_buckets if x[0] != '.']

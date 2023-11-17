@@ -35,40 +35,40 @@ def store_note(note):
     return note
 
 
-buckets_folder = Path('data/buckets')
+collections_folder = Path('data/collections')
 notes_folder = Path('data/notes')
 
 # if st.button('Reload'):
 #     st.rerun()
 
-current_buckets = [x.name for x in buckets_folder.glob('*') if x.is_dir()]
-current_buckets = [x for x in current_buckets if x[0] != '.']
+current_collections = [x.name for x in collections_folder.glob('*') if x.is_dir()]
+current_collections = [x for x in current_collections if x[0] != '.']
 
-# current_notes = [x for x in notes_folder.glob('*.json')]
+current_notes = [x for x in notes_folder.glob('*.json')]
 
-selected_buckets = list()
+selected_collections = list()
 
-selected_buckets = st.multiselect('Which note buckets to load', options=current_buckets, default='to_process')
-for bucket_index, bucket in enumerate(selected_buckets):
-    _path = buckets_folder.joinpath(bucket)
+selected_collections = st.multiselect('Which note collections to load', options=current_collections)
+for collection_index, collection in enumerate(selected_collections):
+    _path = collections_folder.joinpath(collection)
     _current_notes = [x for x in _path.glob('*.json')]
     with st.expander(_path.name):
         st.markdown("""Batch processing is possible. Select what you want and whether you want to overwrite the files or save to a new collection.\n\n*If you want to overwrite, leave the collection name as is.*""")
         batch_phrase, batch_entity, batch_summary = st.columns([1,1,1])
         with batch_phrase:
-            batch_phrase_extract = st.toggle('Batch Phrase Extract', key=f'batch_phrase_extract_{bucket_index}')
+            batch_phrase_extract = st.toggle('Batch Phrase Extract', key=f'batch_phrase_extract_{collection_index}')
         with batch_entity:
-            batch_entity_extract = st.toggle('Batch Entity Extract', key=f'batch_entity_extract_{bucket_index}')
+            batch_entity_extract = st.toggle('Batch Entity Extract', key=f'batch_entity_extract_{collection_index}')
         with batch_summary:
-            batch_summary_extract = st.toggle('Batch Summary Extract', key=f'batch_summary_extract_{bucket_index}')
+            batch_summary_extract = st.toggle('Batch Summary Extract', key=f'batch_summary_extract_{collection_index}')
 
         batch_collection, batch_save = st.columns([4,1])
         with batch_collection:
-            batch_collection_name = st.text_input('Collection Name', value=bucket, key=f'batch_collection_save_{bucket_index}')
+            batch_collection_name = st.text_input('Collection Name', value=collection, key=f'batch_collection_save_{collection_index}')
         with batch_save:
-            if st.button('Batch Process!', key=f'batch_process_{bucket_index}'):
-                batch_bucket = buckets_folder.joinpath(batch_collection_name)
-                batch_bucket.mkdir(parents=True, exist_ok=True)
+            if st.button('Batch Process!', key=f'batch_process_{collection_index}'):
+                batch_collection = collections_folder.joinpath(batch_collection_name)
+                batch_collection.mkdir(parents=True, exist_ok=True)
                 for file in _current_notes:
                     with open(file,'r') as f:
                         tmp_note = json.load(f)
@@ -89,12 +89,12 @@ for bucket_index, bucket in enumerate(selected_buckets):
                     if batch_summary_extract:
                         tmp_note['summary'] = summarize_text(tmp_note['text']).strip()
 
-                    save_path = batch_bucket.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
+                    save_path = batch_collection.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
                     with open(save_path, 'w') as f:
                         json.dump(tmp_note, f)
                 
-                st.write(bucket)
-                save_path = batch_bucket.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
+                st.write(collection)
+                save_path = batch_collection.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
                 with open(save_path, 'w') as f:
                     json.dump(tmp_note, f)
         
@@ -106,7 +106,7 @@ for bucket_index, bucket in enumerate(selected_buckets):
                 if 'vector' in tmp_note:
                     del tmp_note['vector']
                 st.markdown(f"**:blue[{_title}]**")
-                if st.toggle('Show Note', key=f'show_note_{bucket_index}_{index}'):
+                if st.toggle('Show Note', key=f'show_note_{collection_index}_{index}'):
                     text_col, note_col = st.columns([2,1])
                     with text_col:
                         for key, value in tmp_note.items():
@@ -120,29 +120,29 @@ for bucket_index, bucket in enumerate(selected_buckets):
                         ## Create session state for the text
                         ## add button to make rest api call to populate and then update text
                         ## Add button to save the note
-                        save_note, local_bucket = st.columns([1,3])
+                        save_note, local_collection = st.columns([1,3])
                         with save_note:
-                            _save_note = st.button('Save', key=f'save_note_{bucket_index}_{index}')
-                        with local_bucket:
-                            save_buckets = st.multiselect('Which buckets to save to', 
-                                                          options=current_buckets, default='to_process', 
-                                                          key=f'save_buckets_{bucket_index}_{index}')
+                            _save_note = st.button('Save', key=f'save_note_{collection_index}_{index}')
+                        with local_collection:
+                            save_collections = st.multiselect('Which collections to save to', 
+                                                          options=current_collections,
+                                                          key=f'save_collections_{collection_index}_{index}')
 
-                        if st.toggle('\nPhrase Extract', key=f'phrase_extract_{bucket_index}_{index}'):
+                        if st.toggle('\nPhrase Extract', key=f'phrase_extract_{collection_index}_{index}'):
                                 tmp_note['phrases'] = ''
                                 phrases = keyphrase_text(tmp_note['text'])
-                                phrases = [x[0] for x in phrases]
-                                phrases = ','.join(phrases)
+                                # phrases = [x[0] for x in phrases]
+                                # phrases = ','.join(phrases)
                                 tmp_note['phrases'] = phrases
                         if 'phrases' in tmp_note:
                             phrase_input = st.text_area('Keyphrases', value=tmp_note['phrases'], 
-                                                        key=f'phrase_input_{bucket_index}_{index}')
+                                                        key=f'phrase_input_{collection_index}_{index}')
                         else:
                             phrase_input = st.text_area('Keyphrases', value='', 
-                                                        key=f'phrase_input_{bucket_index}_{index}')
+                                                        key=f'phrase_input_{collection_index}_{index}')
 
                         if st.toggle('Entity Extract', 
-                                     key=f'entity_extract_{bucket_index}_{index}'):
+                                     key=f'entity_extract_{collection_index}_{index}'):
                                 tmp_note['entities'] = ''
                                 entities = entities_extract(tmp_note['text'])
                                 entities_formatted = ''
@@ -152,41 +152,42 @@ for bucket_index, bucket in enumerate(selected_buckets):
                                 tmp_note['entities'] = entities_formatted
                         if 'entities' in tmp_note:
                             entities_input = st.text_area('Entities', value=tmp_note['entities'], 
-                                                          key=f'entity_input_{bucket_index}_{index}')
+                                                          key=f'entity_input_{collection_index}_{index}')
                         else:
                             entities_input = st.text_area('Entities', value='', 
-                                                          key=f'entity_input_{bucket_index}_{index}')
+                                                          key=f'entity_input_{collection_index}_{index}')
 
                         if st.toggle('Summarize', 
-                                     key=f'summary_extract_{bucket_index}_{index}'):
+                                     key=f'summary_extract_{collection_index}_{index}'):
                                 tmp_note['summary'] = ''
                                 summary = summarize_text(tmp_note['text']).strip()
                                 tmp_note['summary'] = summary
                         if 'summary' in tmp_note:
                             summary_input = st.text_area('Summary', value=tmp_note['summary'], height=500, 
-                                                         key=f'summary_input_{bucket_index}_{index}')
+                                                         key=f'summary_input_{collection_index}_{index}')
                         else:
                             summary_input = st.text_area('Summary', value='', height=500, 
-                                                         key=f'summary_input_{bucket_index}_{index}')
+                                                         key=f'summary_input_{collection_index}_{index}')
                         
                         
                         if _save_note:
-                            for bucket in save_buckets:
-                                st.write(bucket)
-                                save_path = buckets_folder.joinpath(bucket)
+                            for collection in save_collections:
+                                st.write(collection)
+                                # save_path = collections_folder.joinpath(collection)
+                                save_path = notes_folder.joinpath(collection)
                                 save_path = save_path.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
                                 with open(save_path, 'w') as f:
                                     json.dump(tmp_note, f)
-    # selected_buckets = st.multiselect('Which note buckets to load', options=current_buckets)
+    # selected_collections = st.multiselect('Which note collections to load', options=current_collections)
 
 # with create:
-#     st.write('Create new bucket')
-#     new_bucket_name = st.text_input(label='New Bucket Name', value='')
-#     if st.button('Create Bucket'):
-#         buckets_folder.joinpath(new_bucket_name).mkdir(parents=True, exist_ok=True)
+#     st.write('Create new collection')
+#     new_collection_name = st.text_input(label='New collection Name', value='')
+#     if st.button('Create collection'):
+#         collections_folder.joinpath(new_collection_name).mkdir(parents=True, exist_ok=True)
 
 with st.sidebar:
-    new_bucket_name = st.text_input(label='New Bucket Name', value='')
-    if st.button('Create Bucket'):
-        buckets_folder.joinpath(new_bucket_name).mkdir(parents=True, exist_ok=True)
+    new_collection_name = st.text_input(label='New Collection Name', value='')
+    if st.button('Create Collection'):
+        collections_folder.joinpath(new_collection_name).mkdir(parents=True, exist_ok=True)
         st.rerun()
