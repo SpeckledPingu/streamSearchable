@@ -64,10 +64,11 @@ for collection_index, collection in enumerate(selected_collections):
 
         batch_collection, batch_save = st.columns([4,1])
         with batch_collection:
-            batch_collection_name = st.text_input('Collection Name', value=collection, key=f'batch_collection_save_{collection_index}')
+            save_collection_name = st.text_input('Saved Notes Collection Name', value=collection, key=f'batch_collection_save_{collection_index}')
+
         with batch_save:
             if st.button('Batch Process!', key=f'batch_process_{collection_index}'):
-                batch_collection = collections_folder.joinpath(batch_collection_name)
+                batch_collection = collections_folder.joinpath(save_collection_name)
                 batch_collection.mkdir(parents=True, exist_ok=True)
                 for file in _current_notes:
                     with open(file,'r') as f:

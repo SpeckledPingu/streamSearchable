@@ -1,0 +1,73 @@
+default:
+  fields: []
+  source_files: []
+  source_folder: default
+initial_notes:
+  fields:
+  - type_of_release
+  - title_of_release
+  - link
+  - date
+  - page_url
+  - title
+  - document_type
+  - document_author
+  - publish_date
+  - text
+  - tags
+  - score
+  source_files:
+  - "south east asia trade agreement_Marking One Year Since the Release of the Administration\u2019\
+    s Indo-Pacific Strategy.json"
+  - south east asia trade agreement_Seventh Anniversary of the Philippines-China South
+    China Sea Arbitral Tribunal Ruling.json
+  - "south east asia trade agreement_Joint Statement of the C5+1 on the International\
+    \ Conference \u201CCentral and South Asia: Regional Connectivity, Challenges and\
+    \ Opportunities\u201D.json"
+  - south east asia trade agreement_U.S.-ROK Pledge To Increase Cooperation on ASEAN
+    and Southeast Asia.json
+  - south east asia trade agreement_The Historic Announcements by the Governments
+    of the Republic of Korea and Japan.json
+  - cambodia trade agreement_The United States-Cambodia Relationship.json
+  - south east asia trade agreement_Joint Statement on the C5+1 Ministerial in Astana.json
+  source_folder: initial_notes
+summarized_notes:
+  fields:
+  - type_of_release
+  - title_of_release
+  - link
+  - date
+  - page_url
+  - title
+  - document_type
+  - document_author
+  - publish_date
+  - text
+  - tags
+  - score
+  - phrases
+  - entities
+  - summary
+  source_files:
+  - 2023-11-18_14-00-56.json
+  - 2023-11-18_14-02-30.json
+  - 2023-11-18_14-06-14.json
+  - 2023-11-18_14-00-55.json
+  - 2023-11-18_14-01-55.json
+  - 2023-11-18_14-10-01.json
+  source_folder: summarized_notes
+test_bulk_upload:
+  fields:
+  - link
+  - title
+  - document_type
+  - document_author
+  - publish_date
+  - text
+  - tags
+  index_type: raw
+  source_files:
+  - biden_test_0.json
+  - biden_test_2.json
+  - biden_test_1.json
+  source_folder: test_bulk_upload

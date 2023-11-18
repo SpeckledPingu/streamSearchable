@@ -19,7 +19,7 @@ model = GPT4All("orca-mini-3b-gguf2-q4_0.gguf", device='gpu')
 kw_model = KeyBERT()
 vectorizer = KeyphraseCountVectorizer()
 
-nlp = spacy.load("en_core_web_lg")
+nlp = spacy.load("en_core_web_sm")
 
 class Text(BaseModel):
     text: str
@@ -36,7 +36,8 @@ def summarize_text(text: Text):
     query_template = f"""### System: You are a very helpful policy analyst and AI assistant.
     ### Human: Summarize this text: {text}
     ### Response: """
-    summary = model.generate(query_template, max_tokens=500)
+    _query = ' '.join(query_template.split(' ')[:1300])
+    summary = model.generate(_query, max_tokens=500)
     return {'summary':summary}
 
 @app.post("/phrases")

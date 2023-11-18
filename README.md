@@ -1,5 +1,5 @@
-# streamSearchable
-streamSearchable, it's about augmentation, not automation
+# streamSearchable 
+#### *It's about augmentation, not automation*
 
 ## Motivation
 streamSearchable is meant to be a stripped down streamlit app that incorporates traditional search with llm capabilities. This is meant to be a merger between generative models that are used for chat, and the current logical workflows we use for research.
@@ -25,3 +25,36 @@ Currently, these are hardcoded to get a poc moving. But in time it'll expand out
 streamSearchable is meant to be quick to get running and functional for the average user. Because it's built on Streamlit, there are many core functions that aren't possible.
 
 reSearchable will be a companion app that is more functional and capable, but first things first: Let's get the basics up and running.
+
+## TODO
+* [x] Clean up file and index creation to a single page
+
+* [x] Clean up data file distribution for collections and indexes
+
+* [x] Add initial Yaml configuration and index tracking
+
+* [x] Merge bulk indexing and file indexing inmemory search
+
+* [ ] Notes are additive for summaries and entities
+
+* [ ] Standardize file naming schema for hard copies of notes
+
+* [ ] Accept csvs and tar/gz json files
+
+* [ ] Dynamically configurable schema (remove hardcoding)
+
+* [ ] Schema mapping input on upload to map to a standardized schema
+
+* [ ] Standardize note schema
+
+* [ ] Add analysis for mapping extracted information and entities
+
+* [ ] Add graphing of entity maps
+
+* [ ] Add aggregation functionality for statistical analysis of frequency/timeseries/etc
+
+* [ ] Free form note taking
+
+* [ ] Post-analysis auto-fill free form notes
+
+* [ ] Weaviate/Qdrant/Milvus backend support
