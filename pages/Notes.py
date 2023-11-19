@@ -62,7 +62,7 @@ for collection_index, collection in enumerate(selected_collections):
         with batch_summary:
             batch_summary_extract = st.toggle('Batch Summary Extract', key=f'batch_summary_extract_{collection_index}')
 
-        batch_collection, batch_save = st.columns([4,1])
+        batch_collection, batch_save = st.columns([0.7,0.3])
         with batch_collection:
             save_collection_name = st.text_input('Saved Notes Collection Name', value=collection, key=f'batch_collection_save_{collection_index}')
 
@@ -108,7 +108,7 @@ for collection_index, collection in enumerate(selected_collections):
                     del tmp_note['vector']
                 st.markdown(f"**:blue[{_title}]**")
                 if st.toggle('Show Note', key=f'show_note_{collection_index}_{index}'):
-                    text_col, note_col = st.columns([2,1])
+                    text_col, note_col = st.columns([0.7,0.3])
                     with text_col:
                         for key, value in tmp_note.items():
                             if key == 'text':
@@ -136,11 +136,11 @@ for collection_index, collection in enumerate(selected_collections):
                                 # phrases = ','.join(phrases)
                                 tmp_note['phrases'] = phrases
                         if 'phrases' in tmp_note:
-                            phrase_input = st.text_area('Keyphrases', value=tmp_note['phrases'], 
-                                                        key=f'phrase_input_{collection_index}_{index}')
+                            phrase_input = st.text_area('Keyphrases', value=tmp_note['phrases'],
+                                                        height=300, key=f'phrase_input_{collection_index}_{index}')
                         else:
-                            phrase_input = st.text_area('Keyphrases', value='', 
-                                                        key=f'phrase_input_{collection_index}_{index}')
+                            phrase_input = st.text_area('Keyphrases', value='',
+                                                        height=300, key=f'phrase_input_{collection_index}_{index}')
 
                         if st.toggle('Entity Extract', 
                                      key=f'entity_extract_{collection_index}_{index}'):
@@ -152,11 +152,11 @@ for collection_index, collection in enumerate(selected_collections):
                                     entities_formatted += f'{type}: {ents_text}\n'
                                 tmp_note['entities'] = entities_formatted
                         if 'entities' in tmp_note:
-                            entities_input = st.text_area('Entities', value=tmp_note['entities'], 
-                                                          key=f'entity_input_{collection_index}_{index}')
+                            entities_input = st.text_area('Entities', value=tmp_note['entities'],
+                                                          height=300, key=f'entity_input_{collection_index}_{index}')
                         else:
-                            entities_input = st.text_area('Entities', value='', 
-                                                          key=f'entity_input_{collection_index}_{index}')
+                            entities_input = st.text_area('Entities', value='',
+                                                          height=300, key=f'entity_input_{collection_index}_{index}')
 
                         if st.toggle('Summarize', 
                                      key=f'summary_extract_{collection_index}_{index}'):
