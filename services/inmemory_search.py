@@ -13,6 +13,7 @@ from tqdm.auto import tqdm
 import yaml
 
 app = FastAPI()
+models = SentenceTransformer('all-MiniLM-L6-v2')
 
 # embedding_index = Embeddings()
 # embedding_index.load('txtai_embedding_text.tar.gz')
@@ -25,15 +26,15 @@ class IndexFile(BaseModel):
 class IndexCollection(BaseModel):
     collection_name: str
     text_field: str
-    index_type: str
+    data_location: str
 
 class Query(BaseModel):
     collection_name: str
     query: str
 
-data_folder = Path('data/collections')
-config_file = Path('data/config/indexes.yaml')
-index_folder = Path('data/indexes')
+data_folder = Path('../data/collections')
+config_file = Path('../data/config/indexes.yaml')
+index_folder = Path('../data/indexes')
 index_name = 'index.tar.gz'
 
 with open(config_file, 'r') as f:
@@ -49,6 +50,8 @@ class SharedIndexes():
     def load_indexes(self):
         print([x for x in index_folder.glob('*')])
         for _collection in self.index_folder.glob('*'):
+            if _collection.stem[0] == '.':
+                continue
             if _collection.is_dir():
                 index_path = _collection.joinpath(self.index_name)
                 if index_path.exists():
@@ -104,7 +107,7 @@ def index_multi_documents(filenames, split_on_list=False):
 def batch_index(index: IndexCollection):
     collection_name = index.collection_name
     text_field = index.text_field
-    index_type = index.index_type
+    data_location = index.data_location
     source_file = data_folder.joinpath(collection_name)
     collection_folder = index_folder.joinpath(collection_name)
     index_file = collection_folder.joinpath('index.tar.gz')
@@ -112,16 +115,15 @@ def batch_index(index: IndexCollection):
         index_file.unlink()
 
     config[collection_name] = dict()
-    files_to_index = [x for x in source_file.glob('*') if x.is_file()]
+    files_to_index = [x for x in source_file.glob('*.json') if x.is_file()]
 
-    search_index = Embeddings(path="sentence-transformers/all-MiniLM-L6-v2", content=True, keyword='hybrid',
-                              device='gpu', batch_size=16)
+    search_index = Embeddings(models=models, content=True, keyword='hybrid',
+                              device='gpu', batch_size=32)
     search_index.index([x for x in index_multi_documents(files_to_index)])
     search_index.save(index_file.as_posix())
 
     config[collection_name]['source_folder'] = source_file.name
     config[collection_name]['source_files'] = [x.name for x in files_to_index]
-    config[collection_name]['index_type'] = index_type
 
     with open(files_to_index[0],'r') as f:
         column_file = json.load(f)
@@ -161,7 +163,7 @@ def index_file(index: IndexFile):
         config[collection_name]['source_folder'] = collection_name
         config[collection_name]['source_files'] = list()
         config[collection_name]['fields'] = list()
-        search_index = Embeddings(path="sentence-transformers/all-MiniLM-L6-v2", content=True, keyword='hybrid')
+        search_index = Embeddings(models=models, content=True, keyword='hybrid')
         indexes.indexes[collection_name] = search_index
 
     if file_name in config[collection_name]['source_files']:

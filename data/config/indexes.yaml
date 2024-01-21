@@ -1,3 +1,19 @@
+biden_press_releases:
+  fields:
+  - type_of_release
+  - title_of_release
+  - link
+  - date
+  - page_url
+  - title
+  - document_type
+  - document_author
+  - publish_date
+  - text
+  - tags
+  source_files:
+  - all_biden_press_statements_sec_of_state_v2.json
+  source_folder: biden_press_releases
 default:
   fields: []
   source_files: []
@@ -71,3 +87,28 @@ test_bulk_upload:
   - biden_test_2.json
   - biden_test_1.json
   source_folder: test_bulk_upload
+trial_notes:
+  fields:
+  - type_of_release
+  - title_of_release
+  - link
+  - date
+  - page_url
+  - title
+  - document_type
+  - document_author
+  - publish_date
+  - text
+  - tags
+  - score
+  - phrases
+  - entities
+  - summary
+  index_type: REPLACE ME
+  source_files:
+  - "biden_Marking One Year Since the Release of the Administration\u2019s Indo-Pacific\
+    \ Strategy.json"
+  - biden_The United States-Cambodia Relationship.json
+  - biden_The Historic Announcements by the Governments of the Republic of Korea and
+    Japan.json
+  source_folder: trial_notes
