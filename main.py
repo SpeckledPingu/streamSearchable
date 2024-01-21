@@ -111,8 +111,7 @@ if query:
         with st.container():
             # st.write(f"{' '.join(result['text'].split(' ')[:50])}...")
             st.write(f"{' '.join(result['text'].split(' ')[:100])}.....")
-            save_to_collection = st.toggle('Save to collection',key=f'toggle_{index}',
-                                             on_change=add_result_to_save, args=(result, ))
+
             # if save_to_collection:
             #     st.write(st.session_state['results_to_save'])
 
@@ -140,6 +139,7 @@ if query:
                 #             _path = collections_folder.joinpath(_bucket)
                 #             with open(_path.joinpath(f'{query}_{result["title"]}.json'),'w') as f:
                 #                 json.dump(fast_note, f)
-                                
+            save_to_collection = st.toggle('Save to collection',key=f'toggle_{index}',
+                                           on_change=add_result_to_save, args=(result, ))
         st.divider()
 

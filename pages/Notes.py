@@ -217,11 +217,13 @@ for collection_index, collection in enumerate(selected_collections):
 
                         if _save_note:
                             _entities = [x.strip().split(':') for x in tmp_note['entities'].split(';')]
-                            _entities = {key.strip():[x.strip() for x in value.split(',')] for key, value in _entities}
+                            _entities = {key_value[0].strip(): [x.strip() for x in key_value[1].split(', ')] for
+                                         key_value in _entities if len(key_value) > 1}
+                            print(_entities)
                             tmp_note['entities'] = _entities
-
-                            _keyphrases = [x.strip() for x in tmp_note['keyphrases'].split(',')]
-                            tmp_note['keyphrases'] = _keyphrases
+                            print(tmp_note.keys())
+                            _keyphrases = [x.strip() for x in tmp_note['phrases'].split(',')]
+                            tmp_note['phrases'] = _keyphrases
                             for collection in save_collections:
                                 st.write(collection)
                                 # save_path = notes_folder.joinpath(collection)
