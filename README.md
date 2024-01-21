@@ -35,26 +35,34 @@ reSearchable will be a companion app that is more functional and capable, but fi
 
 * [x] Merge bulk indexing and file indexing inmemory search
 
-* [ ] Notes are additive for summaries and entities
+* [x] Notes are additive for summaries and entities
+
+* [x] Schema mapping input on upload to map to a standardized schema (Partially complete)
+
+* [x] Standardize note schema
+
+* [x] Free form note taking
+
+* [x] Post-analysis auto-fill free form notes
+* [x] Llama-CPP backend
+  * [ ] Directions for linux llama cpp install with install bash script
+
+* [ ] Yeah.... Need a requirements and test file....
+
+* [ ] Prompt development in-browser (both writing and experimenting)
 
 * [ ] Standardize file naming schema for hard copies of notes
 
 * [ ] Accept csvs and tar/gz json files
 
 * [ ] Dynamically configurable schema (remove hardcoding)
-
-* [ ] Schema mapping input on upload to map to a standardized schema
-
-* [ ] Standardize note schema
+   * [ ] Model backend configurations
+   * [ ] Dynamic indexing for json and csv
 
 * [ ] Add analysis for mapping extracted information and entities
 
 * [ ] Add graphing of entity maps
 
 * [ ] Add aggregation functionality for statistical analysis of frequency/timeseries/etc
-
-* [ ] Free form note taking
-
-* [ ] Post-analysis auto-fill free form notes
 
 * [ ] Weaviate/Qdrant/Milvus backend support
