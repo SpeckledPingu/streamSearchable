@@ -1,7 +1,3 @@
-## Load a file into memory
-## Load the vectors into a vector index
-## Load the text data into a bm25 index
-
 import json
 import gzip
 from sentence_transformers import SentenceTransformer
@@ -11,12 +7,10 @@ from pydantic import BaseModel
 from pathlib import Path
 from tqdm.auto import tqdm
 import yaml
+from .ingestion_structures import Document, JsonDocument, CsvDocument
 
 app = FastAPI()
 models = SentenceTransformer('all-MiniLM-L6-v2')
-
-# embedding_index = Embeddings()
-# embedding_index.load('txtai_embedding_text.tar.gz')
 
 class IndexFile(BaseModel):
     file_name: str
@@ -25,8 +19,7 @@ class IndexFile(BaseModel):
 
 class IndexCollection(BaseModel):
     collection_name: str
-    text_field: str
-    data_location: str
+    field_map: dict
 
 class Query(BaseModel):
     collection_name: str
@@ -81,33 +74,10 @@ def index_query(query: Query):
     print(len(results))
     return results
 
-
-def index_multi_documents(filenames, split_on_list=False):
-    print(filenames)
-    for file in filenames:
-        with open(file,'r') as f:
-            data = json.load(f)
-            if isinstance(data, dict):
-                yield data
-            else:
-                print(data[0])
-                for row in tqdm(data):
-                    if 'tags' in row and isinstance(row['tags'], list):
-                        _tags = ','.join([_tag['tag_name'] for _tag in row['tags']])
-                        row['tags'] = _tags
-                    else:
-                        row['tags'] = ''
-
-                    if isinstance(row['text'], list):
-                        row['text'] = '\n\n'.join(row['text'])
-                    # print(row)
-                    yield row
-
 @app.post('/batch_index')
 def batch_index(index: IndexCollection):
     collection_name = index.collection_name
-    text_field = index.text_field
-    data_location = index.data_location
+    fields = index.field_map
     source_file = data_folder.joinpath(collection_name)
     collection_folder = index_folder.joinpath(collection_name)
     index_file = collection_folder.joinpath('index.tar.gz')
@@ -119,17 +89,15 @@ def batch_index(index: IndexCollection):
 
     search_index = Embeddings(models=models, content=True, keyword='hybrid',
                               device='gpu', batch_size=32)
-    search_index.index([x for x in index_multi_documents(files_to_index)])
+    for file in files_to_index:
+        documents = JsonDocument(title=fields['title'], text=fields['text'], tags=fields['tags'],
+                                date=fields['date'], fields=fields, file_path=file)
+        search_index.index([x for x in documents.return_documents()])
+
     search_index.save(index_file.as_posix())
 
     config[collection_name]['source_folder'] = source_file.name
     config[collection_name]['source_files'] = [x.name for x in files_to_index]
-
-    with open(files_to_index[0],'r') as f:
-        column_file = json.load(f)
-    if isinstance(column_file, list):
-        column_file = column_file[0]
-    fields = list(column_file.keys())
     config[collection_name]['fields'] = fields
 
     with open(config_file, 'w') as f:
@@ -138,58 +106,3 @@ def batch_index(index: IndexCollection):
     indexes.indexes[collection_name] = search_index
 
     return search_index.config
-
-
-@app.post('/index')
-def index_file(index: IndexFile):
-    file_name = index.file_name
-    collection_name = index.collection_name
-    # text_field = index.text_field
-    source_file = data_folder.joinpath(collection_name).joinpath(file_name)
-    print(source_file)
-    collection_folder = index_folder.joinpath(collection_name)
-    index_file = collection_folder.joinpath('index.tar.gz')
-
-    with open(config_file, 'r') as f:
-        config = yaml.unsafe_load(f)
-
-    if index_file.exists() and collection_name in config:
-        index_exists = True
-        search_index = indexes.indexes[collection_name]
-    else:
-        index_exists = False
-        collection_folder.mkdir(parents=True, exist_ok=True)
-        config[collection_name] = dict()
-        config[collection_name]['source_folder'] = collection_name
-        config[collection_name]['source_files'] = list()
-        config[collection_name]['fields'] = list()
-        search_index = Embeddings(models=models, content=True, keyword='hybrid')
-        indexes.indexes[collection_name] = search_index
-
-    if file_name in config[collection_name]['source_files']:
-        return {'message': 'File already indexed'}
-    else:
-        with open(source_file, 'r') as f:
-            data = json.load(f)
-
-    if index_exists:
-        search_index.upsert(data)
-        current_fields = config[collection_name]['fields']
-        for _field in list(data.keys()):
-            if _field not in current_fields:
-                current_fields.append(_field)
-        config[collection_name]['fields'] = current_fields
-    else:
-        search_index.index(data)
-        config[collection_name]['fields'] = list(data.keys())
-
-    search_index.save(index_file.as_posix())
-    config[collection_name]['source_files'].append(source_file.name)
-
-    with open(config_file, 'w') as f:
-        yaml.dump(config, f)
-
-    indexes.reload_index(collection_name)
-    return search_index.config
-
-

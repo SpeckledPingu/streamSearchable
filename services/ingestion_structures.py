@@ -16,14 +16,14 @@ class Document():
     def split_text(self):
         self.text = self.splitter(self.text)
 
-    def create_json_document(self, text, save_uuid=None):
+    def create_json_document(self, text, uuids=None):
         _document = {'title':self.title,
                      'text':text,
                      'tags':self.tags,
                      'date':self.date,
                      'file_path':str(self.file_path),
                      'document_uuid':self.uuid,
-                     'save_uuid': [uuid4()] if save_uuid is None else save_uuid}
+                     'save_uuid': uuids if uuids is not None else uuid4()}
         for field, value in self.extra.items():
             _document[field] = value
         return _document
@@ -31,14 +31,15 @@ class Document():
         if file_path is None: file_path = self.file_path
 
         if isinstance(self.text, list):
-            _document = self.create_json_document('\n'.join(self.text))
+            _document = self.create_json_document('\n'.join(self.text), self.save_uuids)
         else:
-            _document = self.create_json_document(self.text)
+            _document = self.create_json_document(self.text, self.save_uuids)
 
         with open(file_path, 'w') as f:
             json.dump(_document, f)
 
     def return_index_document(self, split_text=False):
+        # modify this to use a new system where split text can be 'keep' for current structure, 'combine' for list tolerance, and 'split' for segmentation
         documents_to_index = list()
         if split_text and self.splitter is None:
             raise "No splitter has been provided"
@@ -48,15 +49,15 @@ class Document():
         if isinstance(self.text, str):
             _document = self.create_json_document(self.text)
             documents_to_index.append(_document)
-            save_document = _document
+            # save_document = _document
         elif isinstance(self.text, list):
             for _text_chunk in self.text:
                 _document = self.create_json_document(_text_chunk)
                 self.save_uuids.append(_document['save_uuid'])
-                documents_to_index.append(_document)
-            save_document = self.create_json_document('\n'.join(self.text), save_uuid=self.save_uuids)
+                yield _document
+            # save_document = self.create_json_document('\n'.join(self.text), save_uuid=self.save_uuids)
 
-        self.save(self.file_path)
+        # self.save(self.file_path)
         return documents_to_index
 
 class CsvDocument():

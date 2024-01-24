@@ -8,6 +8,7 @@ from shutil import copy
 import yaml
 import streamlit_scrollable_textbox as stx
 
+
 st.set_page_config(layout='wide',
                    page_title='Upload')
 
@@ -67,12 +68,12 @@ with metadata_col:
 st.divider()
 st.markdown("**Schema map for the documents**")
 st.caption("If you leave these fields blank, then all text fields will be searched on and there will be no categorization of field types.")
-field_maps = {"Tags":list(), "Text":list() ,"Date":list(), "Entities":list()}
+field_maps = {"title":'', "text":'' ,"date":'', "tags":'', "date":''}
 file_col, explanation_col = st.columns(2)
 with file_col:
     for field_map, fields in field_maps.items():
-        field_maps[field_map] = st.multiselect(f"Relevant Fields for {field_map}", options=preview_file.keys(), key=f"file_field_{field_map}")
-    print(field_maps)
+        fields = st.multiselect(f"Relevant Fields for {field_map}", options=preview_file.keys(), key=f"file_field_{field_map}")
+
 with explanation_col:
     st.markdown("**Explanations of the different field types and uses**")
     st.markdown("**Tags:** Fields that contain values that you would use to categorize the data into different bins.")
@@ -88,11 +89,10 @@ if st.button("Load And Index Data"):
         collection_folder.mkdir(parents=True, exist_ok=True)
 
         for _file in uploaded_files:
-            json_formatted = json.loads(_file.getvalue() )
+            json_formatted = json.loads(_file.getvalue())
             with open(collection_folder.joinpath(_file.name),'w') as f:
                 json.dump(json_formatted, f)
-        print(fields)
-        payload = {'collection_name':collection_name, 'text_field':field_maps['Text'][0], 'data_location':str(collection_folder.joinpath(_file.name).absolute())}
+        payload = {'collection_name':collection_name, 'fields':list(field_map.keys())}
         st.write(payload)
         response = requests.post('http://localhost:8000/batch_index', json=payload)
         st.write(response.json())
@@ -101,4 +101,5 @@ if st.button("Load And Index Data"):
         st.write(payload)
         response = requests.post('http://localhost:8000/batch_index', json=payload)
         st.write(response.json())
+
 
