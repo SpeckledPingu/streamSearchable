@@ -18,6 +18,9 @@ import re
 from newspaper import Article
 import time
 
+from dotenv import load_dotenv
+
+
 app = FastAPI()
 model = Llama(model_path="mistral-7b-instruct-v0.2.Q3_K_M.gguf",
             n_threads=6, n_gpu_layers=33, n_ctx=32768, offload_kqv=False,
