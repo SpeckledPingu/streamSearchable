@@ -7,6 +7,19 @@ from io import StringIO
 from shutil import copy
 import yaml
 import streamlit_scrollable_textbox as stx
+from pathlib import Path
+import sqlite3
+from uuid import uuid4
+import lancedb
+from services.lancedb_index import IndexDocuments
+from sentence_transformers import SentenceTransformer
+
+data_folder = Path('../data/collections')
+config_file = Path('../data/config/indexes.yaml')
+index_folder = Path('../data/indexes')
+
+lance_folder = Path('../data/indexes/lance/')
+sqlite_folder = Path('../data/indexes/')
 
 
 st.set_page_config(layout='wide',
@@ -68,11 +81,11 @@ with metadata_col:
 st.divider()
 st.markdown("**Schema map for the documents**")
 st.caption("If you leave these fields blank, then all text fields will be searched on and there will be no categorization of field types.")
-field_maps = {"title":'', "text":'' ,"date":'', "tags":'', "date":''}
+field_mapping = {"title":'', "text":'' ,"date":'', "tags":'', "date":''}
 file_col, explanation_col = st.columns(2)
 with file_col:
-    for field_map, fields in field_maps.items():
-        fields = st.multiselect(f"Relevant Fields for {field_map}", options=preview_file.keys(), key=f"file_field_{field_map}")
+    for field_map, fields in field_mapping.items():
+        field_mapping[field_map] = st.selectbox(f"Relevant Fields for {field_map}", options=preview_file.keys(), key=f"file_field_{field_map}")
 
 with explanation_col:
     st.markdown("**Explanations of the different field types and uses**")
@@ -92,14 +105,28 @@ if st.button("Load And Index Data"):
             json_formatted = json.loads(_file.getvalue())
             with open(collection_folder.joinpath(_file.name),'w') as f:
                 json.dump(json_formatted, f)
-        payload = {'collection_name':collection_name, 'fields':list(field_map.keys())}
-        st.write(payload)
-        response = requests.post('http://localhost:8000/batch_index', json=payload)
-        st.write(response.json())
-    else:
-        payload = {'collection_name':collection_name, 'text_field':'text', 'index_type':'REPLACE ME'}
-        st.write(payload)
-        response = requests.post('http://localhost:8000/batch_index', json=payload)
-        st.write(response.json())
+        st.write(field_mapping)
+        indexer = IndexDocuments(field_mapping=field_mapping,
+                                 source_file=collection_folder.joinpath(_file.name),
+                                 index_name=collection_name,
+                                 overwrite=True)
+
+        source_file = collection_folder.joinpath(_file.name)
+        if source_file.suffix == '.json':
+            indexer.open_json()
+        elif source_file.suffix == '.csv':
+            indexer.open_csv()
+
+        indexer.create_documents()
+        indexer.ingest()
+        st.write('finished!')
+        # st.write(payload)
+        # response = requests.post('http://localhost:8000/batch_index', json=payload)
+        # st.write(response.json())
+    # else:
+    #     payload = {'collection_name':collection_name, 'text_field':'text', 'index_type':'REPLACE ME'}
+    #     st.write(payload)
+    #     response = requests.post('http://localhost:8000/batch_index', json=payload)
+    #     st.write(response.json())
 
 
