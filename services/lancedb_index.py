@@ -26,7 +26,7 @@ class LanceDBDocument():
         # self.date = document[date] if date is not None else None
         self.file_path = file_path
         self.metadata = {k:document[k] for k in fields if k not in [title, text, tags, date]}
-        self.uuid = str(uuid4())
+        self.uuid = str(uuid4()) if 'uuid' not in document else document['uuid']
         self.save_uuids = list()
         self.sqlite_fields = list()
         self.lance_exclude = list()
