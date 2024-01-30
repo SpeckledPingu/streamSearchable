@@ -95,6 +95,6 @@ But first things first: Let's get the basics up and running.
 
 * [ ] Add analysis for mapping extracted information and entities
 
-* [ ] Add graphing of entity maps
+* [ ] Add graphing of entity maps - Kuzu Backend
 
 * [ ] Add aggregation functionality for statistical analysis of frequency/timeseries/etc

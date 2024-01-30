@@ -5,6 +5,9 @@ import requests
 from pathlib import Path
 from datetime import datetime
 from jinja2 import Template
+import lancedb
+import sqlite3
+from services.lancedb_notes import IndexDocumentsNotes
 
 st.set_page_config(layout='wide',
                    page_title='Notes')
@@ -33,7 +36,7 @@ def keyphrase_text(text, strength_cutoff=0.3):
 def entities_extract(text):
     results = requests.post('http://localhost:8001/ner',
                             json={'text':text})
-    print(results.content)
+    # st.write(results.json()['entities'])
     return results.json()['entities']
 
 @st.cache_data
@@ -43,110 +46,81 @@ def store_note(note):
     return note
 
 
-collections_folder = Path('data/collections')
 notes_folder = Path('data/notes')
+collections_folder = Path('data/collections')
+tmp_folder = Path('data/tmp')
 config_folder = Path('data/config')
 with open(config_folder.joinpath('prompt_templates.json'), 'r') as f:
     prompt_options = json.load(f)
 
+
+index_folder = Path('indexes')
+sqlite_location = Path('data/indexes/documents.sqlite')
+
+lance_index = lancedb.connect(index_folder)
+available_indexes = lance_index.table_names()
+selected_collections = st.multiselect('Which note collections to load', options=available_indexes)
+
+index_to_search = st.selectbox(label='Available Indexes', options=available_indexes)
 prompt_option_choices = [x['Name'] for x in prompt_options]
 
-current_collections = [x.name for x in collections_folder.glob('*') if x.is_dir()]
-current_collections = [x for x in current_collections if x[0] != '.']
 
-current_notes = [x for x in notes_folder.glob('*.json')]
+for collection_idx, collection_name in enumerate(selected_collections):
+    sqlite_conn = sqlite3.connect(sqlite_location)
+    notes = sqlite_conn.execute(f"""SELECT * from {collection_name}""").fetchall()
+    fields = sqlite_conn.execute(f"PRAGMA table_info({collection_name})").fetchall()
+    fields = [x[1] for x in fields]
+    notes = [dict(zip(fields, note)) for note in notes]
+    for note in notes:
+        note['metadata'] = json.loads(note['metadata'])
 
-selected_collections = list()
-
-selected_collections = st.multiselect('Which note collections to load', options=current_collections)
-for collection_index, collection in enumerate(selected_collections):
-    _path = collections_folder.joinpath(collection)
-    _current_notes = [x for x in _path.glob('*.json')]
-
-    with st.expander(_path.name):
+    with st.expander(collection_name):
         st.markdown("""Batch processing is possible. Select what you want and whether you want to overwrite the files or save to a new collection.\n\n*If you want to overwrite, leave the collection name as is.*""")
         batch_phrase, batch_entity, batch_summary = st.columns([1,1,1])
         with batch_phrase:
-            batch_phrase_extract = st.toggle('Batch Phrase Extract', key=f'batch_phrase_extract_{collection_index}')
+            batch_phrase_extract = st.toggle('Batch Phrase Extract', key=f'batch_phrase_extract_{collection_name}')
         with batch_entity:
-            batch_entity_extract = st.toggle('Batch Entity Extract', key=f'batch_entity_extract_{collection_index}')
+            batch_entity_extract = st.toggle('Batch Entity Extract', key=f'batch_entity_extract_{collection_name}')
         with batch_summary:
-            batch_summary_extract = st.toggle('Batch Summary Extract', key=f'batch_summary_extract_{collection_index}')
+            batch_summary_extract = st.toggle('Batch Summary Extract', key=f'batch_summary_extract_{collection_name}')
 
         selected_prompt_name = st.selectbox("Which prompt template?", prompt_option_choices, index=0)
         selected_prompt = prompt_options[prompt_option_choices.index(selected_prompt_name)]
         print(selected_prompt)
-        save_collection_name = st.text_input('Saved Notes Collection Name', value=collection, key=f'batch_collection_save_{collection_index}')
+        save_collection_name = st.text_input('Saved Notes Collection Name', value=collection_name, key=f'batch_collection_save_{collection_name}')
 
-        if st.button('Batch Process!', key=f'batch_process_{collection_index}'):
-            batch_collection = collections_folder.joinpath(save_collection_name)
-            batch_collection.mkdir(parents=True, exist_ok=True)
-
+        if st.button('Batch Process!', key=f'batch_process_{collection_name}'):
             progress_text = "Processing Progress (May take some time if summarizing)"
             batch_progress_bar = st.progress(0, text=progress_text)
-            for i, file in enumerate(_current_notes, start=1):
-                with open(file,'r') as f:
-                    tmp_note = json.load(f)
-                if 'vector' in tmp_note:
-                    del tmp_note['vector']
-
-                if batch_phrase_extract:
-                    tmp_note['phrases'] = keyphrase_text(tmp_note['text'])
-
+            for i, note in enumerate(notes, start=1):
                 if batch_entity_extract:
-                    entities = entities_extract(tmp_note['text'])
-                    # entities_formatted = ''
-                    # for type, ents in entities.items():
-                    #     ents_text = ', '.join(ents)
-                    #     entities_formatted += f'{type}: {ents_text}\n'
-                    tmp_note['entities'] = entities
+                    entities = entities_extract(note['text'])
+                    note['entities'] = entities
 
                 if batch_summary_extract:
-                    tmp_note['summary'] = summarize_text(tmp_note['text'], selected_prompt).strip()
+                    note['summary'] = summarize_text(note['text'], selected_prompt).strip()
 
-                # save_path = batch_collection.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
-                with open(file, 'w') as f:
-                    json.dump(tmp_note, f)
-                batch_progress_bar.progress(i/len(_current_notes), text=progress_text)
-
+                batch_progress_bar.progress(i/len(notes), text=progress_text)
             st.write("Collection Processed!")
 
-            st.write(collection)
-
         with st.container():
-            for index, file in enumerate(_current_notes):
-                with open(file,'r') as f:
-                    tmp_note = json.load(f)
-                _title = tmp_note['title']
-
-                st.markdown(f"**:blue[{_title}]**")
-                if st.toggle('Show Note', key=f'show_note_{collection_index}_{index}'):
+            for index, note in enumerate(notes):
+                st.markdown(f"**:blue[{note['title']}]**")
+                if st.toggle('Show Note', key=f'show_note_{collection_name}_{index}'):
                     text_col, note_col = st.columns([0.6,0.4])
                     with text_col:
-                        for key, value in tmp_note.items():
-                            if key == 'vector':
-                                continue
-                            if key == 'text':
-                                st.caption(key)
-                                st.markdown('\n\n'.join(value.split('\n')))
-                                continue
-                            if key == 'phrases':
-                                if isinstance(value, list):
-                                    st.caption(key)
-                                    st.markdown(', '.join(value))
-                                    continue
-                            if key == 'entities':
-                                if isinstance(value, dict):
-                                    st.caption(key)
-                                    entities_formatted = ''
-                                    for type, ents in value.items():
-                                        ents_text = ', '.join(ents)
-                                        entities_formatted += f'**{type}**: {ents_text};\n\n'
-                                    st.write(entities_formatted)
-                                    continue
+                        st.markdown(f"**Date:** {note['date']}")
+                        st.markdown(f"**Title:** {note['title']}")
+                        if 'tags' in note and len(note['tags']) > 0:
+                            st.markdown(f"**Tags:** {note['tags']}")
+                        if 'phrases' in note['metadata']:
+                            st.markdown(f"**Keyphrases:** {note['metadata']['phrases']}")
+                        if 'entities' in note['metadata']:
+                            st.markdown(f"Entities:** {note['metadata']['entities']}")
 
-                            st.caption(key)
-                            st.write(value)
+                        st.markdown("**Text**")
+                        st.markdown(note['text'].replace('\n','\n\n'))
+                        st.json(note['metadata'], expanded=False)
 
                     with note_col:
                         ## Create session state for the text
@@ -155,81 +129,77 @@ for collection_index, collection in enumerate(selected_collections):
                         save_note, local_collection = st.columns([1,3])
 
                         with save_note:
-                            _save_note = st.button('Save', key=f'save_note_{collection_index}_{index}')
-                        with local_collection:
-                            save_collections = st.multiselect('Which collections to save to',
-                                                              options=current_collections,
-                                                              key=f'save_collections_{collection_index}_{index}')
+                            _save_note = st.button('Save', key=f'save_note_{collection_name}_{index}')
 
                         ### Keyphrase extraction using Keybert/Keyphrase Vectorizers/Spacy NLP
-                        if st.toggle('\nPhrase Extract', key=f'phrase_extract_{collection_index}_{index}'):
-                            tmp_note['phrases'] = ''
-                            phrases = keyphrase_text(tmp_note['text'])
-                            tmp_note['phrases'] = phrases
+                        if st.toggle('\nPhrase Extract', key=f'phrase_extract_{collection_name}_{index}'):
+                            phrases = keyphrase_text(note['text'])
+                            if 'phrases' not in note['metadata']:
+                                note['metadata']['phrases'] = ','.join(phrases)
+                            else:
+                                note['metadata']['phrases'] = note['metadata']['phrases'] +'\n' + ','.join(phrases)
 
-                        if 'phrases' in tmp_note:
-                            if isinstance(tmp_note['phrases'], list):
-                                phrase_text_notes = ', '.join(tmp_note['phrases'])
-                            tmp_note['phrases']  = st.text_area('Keyphrases', value=phrase_text_notes,
-                                                                height=100, key=f'phrase_input_{collection_index}_{index}')
+                        if 'phrases' in note['metadata']:
+                            note['metadata']['phrases']  = st.text_area('Keyphrases', value=note['metadata']['phrases'],
+                                                                height=100, key=f'phrase_input_{collection_name}_{index}')
                         else:
-                            tmp_note['phrases']  = st.text_area('Keyphrases', value='',
-                                                                height=100, key=f'phrase_input_{collection_index}_{index}')
+                            note['metadata']['phrases']  = st.text_area('Keyphrases', value='',
+                                                                height=100, key=f'phrase_input_{collection_name}_{index}')
 
                         ### Entity extraction using Spacy NLP backend
-                        if st.toggle('Entity Extract', key=f'entity_extract_{collection_index}_{index}'):
-                            tmp_note['entities'] = ''
-                            entities = entities_extract(tmp_note['text'])
+                        if st.toggle('Entity Extract', key=f'entity_extract_{collection_name}_{index}'):
+                            if 'entities' not in note['metadata']:
+                                note['metadata']['entities'] = dict()
+                            entities = entities_extract(note['text'])
+                            note['metadata']['entities'].update(entities)
+                        # st.write(note['metadata']['entities'])
+                        entities_formatted = ''
+                        if 'entities' in note['metadata']:
                             entities_formatted = ''
-                            for type, ents in entities.items():
+                            for ent_type, ents in note['metadata']['entities'].items():
                                 ents_text = ', '.join(ents)
-                                entities_formatted += f'{type}: {ents_text};\n\n'
-                            tmp_note['entities'] = entities_formatted.strip()
-
-                        if 'entities' in tmp_note:
-                            if isinstance(tmp_note['entities'], dict):
-                                entities_formatted = ''
-                                for type, ents in tmp_note['entities'].items():
-                                    ents_text = ', '.join(ents)
-                                    entities_formatted += f'{type}: {ents_text};\n\n'
+                                entities_formatted += f'{ent_type}: {ents_text};\n\n'
                             entities_formatted = entities_formatted.strip()
-                            tmp_note['entities'] = st.text_area('Entities', value=entities_formatted,
-                                                                height=200, key=f'entity_input_{collection_index}_{index}')
+                            entities_formatted = st.text_area('Entities', value=entities_formatted,
+                                                                height=200, key=f'entity_input_{collection_name}_{index}')
                         else:
-                            tmp_note['entities'] = st.text_area('Entities', value='',
-                                                                height=200, key=f'entity_input_{collection_index}_{index}')
+                            entities = st.text_area('Entities', value='',
+                                                                height=200, key=f'entity_input_{collection_name}_{index}')
+                        note_json = dict()
+                        for entity in entities_formatted.split(';'):
+                            if len(entity) == 0:
+                                continue
+                            entity_type, entity_values = entity.split(':')
+                            entity_values = [x.strip() for x in entity_values.split(',')]
+                            note_json[entity_type.strip()] = entity_values
+                        note['metadata']['entities'] = note_json
 
                         #### Summarization using Llama CPP backend
                         selected_prompt_name = st.selectbox("Which prompt template?", prompt_option_choices, index=0,
-                                                            key=f'doc_prompt_template_{collection_index}_{index}')
+                                                            key=f'doc_prompt_template_{collection_name}_{index}')
                         selected_prompt = prompt_options[prompt_option_choices.index(selected_prompt_name)]
-                        if st.toggle('Summarize', key=f'summary_extract_{collection_index}_{index}'):
-
-                            tmp_note['summary'] = ''
-                            summary = summarize_text(tmp_note['text'], selected_prompt).strip()
-                            tmp_note['summary'] = summary
-                        if 'summary' in tmp_note:
-                            tmp_note['summary'] = st.text_area('Summary', value=tmp_note['summary'], height=500,
-                                                               key=f'summary_input_{collection_index}_{index}')
+                        if st.toggle('Summarize', key=f'summary_extract_{collection_name}_{index}'):
+                            if 'summary' not in note['metadata']:
+                                note['metadata']['summary'] = ''
+                            summary = summarize_text(note['text'], selected_prompt).strip()
+                            note['metadata']['summary'] = summary
+                        if 'summary' in note['metadata']:
+                            note['metadata']['summary'] = st.text_area('Summary', value=note['metadata']['summary'], height=500,
+                                                               key=f'summary_input_{collection_name}_{index}')
                         else:
-                            tmp_note['summary'] = st.text_area('Summary', value='', height=500,
-                                                               key=f'summary_input_{collection_index}_{index}')
+                            note['metadata']['summary'] = st.text_area('Summary', value='', height=500,
+                                                               key=f'summary_input_{collection_name}_{index}')
 
                         if _save_note:
-                            _entities = [x.strip().split(':') for x in tmp_note['entities'].split(';')]
-                            _entities = {key_value[0].strip(): [x.strip() for x in key_value[1].split(', ')] for
-                                         key_value in _entities if len(key_value) > 1}
-                            print(_entities)
-                            tmp_note['entities'] = _entities
-                            print(tmp_note.keys())
-                            _keyphrases = [x.strip() for x in tmp_note['phrases'].split(',')]
-                            tmp_note['phrases'] = _keyphrases
-                            for collection in save_collections:
-                                st.write(collection)
-                                # save_path = notes_folder.joinpath(collection)
-                                # save_path = save_path.joinpath(f'{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
-                                with open(file, 'w') as f:
-                                    json.dump(tmp_note, f)
+                            note['metadata'] = json.dumps(note['metadata'])
+                            lance_table = lance_index.open_table(collection_name)
+                            st.write(note['uuid'])
+                            # LanceDB current can't (or more likely I don't know) how to update its metadata fields
+                            # Sqlite will be used instead as it's the document repository anyways
+                            # To create searchable notes, I'll have to think up something with lancedb_notes
+                            # lance_table.update(where=f"uuid =' {note['uuid']}'", values={'metadata':note['metadata']})
+                            sqlite_conn.execute(f"""UPDATE {collection_name} SET metadata='{note['metadata'].replace("'","''")}' WHERE uuid='{note['uuid']}'""")
+                            sqlite_conn.commit()
 
 with st.sidebar:
     new_collection_name = st.text_input(label='New Collection Name', value='')

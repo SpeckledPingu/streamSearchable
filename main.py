@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 import lancedb
 from services.lancedb_index import IndexDocuments
+from services.lancedb_notes import IndexDocumentsNotes
 import yaml
 
 ### For multipage note taking, save to a json and then load the json in a state
@@ -98,7 +99,7 @@ with st.sidebar:
         with open(notes_save_file, 'w') as f:
             json.dump(save_data, f)
 
-        indexer = IndexDocuments(field_mapping={'text':'text', 'tags':'tags','title':'title','date':'date'},
+        indexer = IndexDocumentsNotes(field_mapping={'text':'text', 'tags':'tags','title':'title','date':'date'},
                                  source_file=notes_save_file,
                                  index_name=notes_save_name,
                                  overwrite=False)

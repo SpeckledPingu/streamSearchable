@@ -38,7 +38,7 @@ response = requests.post(
         "model": os.getenv('OPENROUTER_MODEL'),
         "temperature":0.2,
         "seed":15,
-        "max_tokens":5000,
+        "max_tokens":600,
         "messages": [
             {"role": "system", "content": system_prompt},
             {
@@ -65,6 +65,7 @@ class Prompt(BaseModel):
 
 @app.post("/summarize")
 def summarize_text(prompts: Prompt):
+    t0 = time.time()
     response = requests.post(
         url=os.getenv('OPENROUTER_URL'),
         headers={
@@ -76,7 +77,7 @@ def summarize_text(prompts: Prompt):
             "model": os.getenv('OPENROUTER_MODEL'),
             "temperature":0.2,
             "seed":15,
-            "max_tokens":2500,
+            "max_tokens":600,
             "messages": [
                 {"role": "system", "content": prompts.system_prompt},
                 {
@@ -86,7 +87,7 @@ def summarize_text(prompts: Prompt):
             ]
         })
     )
-
+    print(f'time to summarize: {time.time() - t0}')
     summary = response.json()['choices'][0]['message']['content'].strip()
     return {'summary':summary}
 
