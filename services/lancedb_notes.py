@@ -17,6 +17,11 @@ lance_folder = Path('indexes')
 lance_folder.mkdir(parents=True, exist_ok=True)
 
 sqlite_folder = Path('data/indexes/')
+with sqlite3.connect(sqlite_folder.joinpath('documents.sqlite')) as conn:
+    cursor = conn.cursor()
+    cursor.execute('SELECT SQLITE_VERSION()')
+    data = cursor.fetchone()
+    print(f"Sqlite version: {data}")
 
 class LanceDBDocument():
     def __init__(self, document:dict, title:str, text:str, fields, tags=None, date=None, file_path=None):
@@ -110,6 +115,7 @@ class SqlLiteIngestNotes():
         self.connection = sqlite3.connect(self.db_location)
         if self.overwrite:
             self.connection.execute(f"""DROP TABLE IF EXISTS {self.index_name};""")
+            self.connection.commit()
 
         table_exists = self.connection.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{self.index_name}';").fetchall()
 
@@ -123,6 +129,7 @@ class SqlLiteIngestNotes():
             date STRING,
             source_file STRING,
             metadata JSONB);""")
+            self.connection.commit()
 
     def insert(self, document):
         self.connection.execute(f"""INSERT OR IGNORE INTO 
