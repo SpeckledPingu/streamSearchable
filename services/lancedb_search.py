@@ -43,15 +43,16 @@ def index_query(query: Query):
     sqlite_conn = sqlite3.connect(sqlite_location)
 
     print(query.collection_name)
-    index = lancedb_conn.open_table(query.collection_name)
+    search_index = lancedb_conn.open_table(query.collection_name)
 
-    query = encoder.encode(query.query)
-    search_results = index.search(query).limit(query.top_k).to_list()
+    print(query)
+    search_query = encoder.encode(query.query)
+    search_results = search_index.search(search_query).limit(query.top_k).to_list()
     uuids = {doc['uuid']:position for position, doc in enumerate(search_results)}
     scores = {doc['uuid']:1-doc['_distance'] for doc in search_results}
 
     uuid_query = [f"'{uuid}'" for uuid in list(uuids.keys())]
-    document_results = sqlite_conn.execute(f"""SELECT uuid, * from trump WHERE uuid in ({','.join(uuid_query)});""").fetchall()
+    document_results = sqlite_conn.execute(f"""SELECT uuid, * from {query.collection_name} WHERE uuid in ({','.join(uuid_query)});""").fetchall()
     field_maps = ['uuid']
     field_maps.extend([x[1] for x in sqlite_conn.execute(f"PRAGMA table_info({query.collection_name})").fetchall()])
 
@@ -130,6 +131,7 @@ def index_query(query: HybridQuery):
     if len(uuid_query) > 0:
         uuid_query = ", ".join(uuid_query)
     sql_query = f"""SELECT uuid, * from {query.collection_name} WHERE uuid in ({uuid_query});"""
+    print(sql_query)
     document_results = sqlite_conn.execute(sql_query).fetchall()
     field_maps = ['uuid']
     field_maps.extend([x[1] for x in sqlite_conn.execute(f"PRAGMA table_info({query.collection_name})").fetchall()])
