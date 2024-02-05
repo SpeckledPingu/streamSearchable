@@ -85,16 +85,18 @@ But first things first: Let's get the basics up and running.
 
 * [x] OpenRouter external model api for low-cost non-llama_cpp models
 
-* [ ] Add limited chat-with-notes / chat-with-document capabilities
+* [x] Add limited chat-with-notes / chat-with-document capabilities
 
-* [ ] Add babyAGI style task decomposition for research
+* [x] Add babyAGI style task decomposition for research
+
+* [ ] Database support for tracking auto-research
 
 * [ ] Yeah.... Need a requirements and test file....
 
 * [ ] Prompt development in-browser (both writing and experimenting)
 
-* [ ] Add analysis for mapping extracted information and entities
+* [ ] ~~Add analysis for mapping extracted information and entities~~ *Extraction navigation to come later in a non-streamlit version*
 
-* [ ] Add graphing of entity maps - Kuzu Backend
+* [ ] ~~Add graphing of entity maps - Kuzu Backend~~ *Graphing to come in a non-streamlit system*
 
-* [ ] Add aggregation functionality for statistical analysis of frequency/timeseries/etc
+* [ ] ~~Add aggregation functionality for statistical analysis of frequency/timeseries/etc~~ *Time series to come in a non-streamlit system*

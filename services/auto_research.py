@@ -295,7 +295,7 @@ class AutoResearch():
             time.sleep(7)
             internet_queries = first_research_task[0]
             task_data['internet_queries'] = internet_queries
-            time.sleep(5)
+            time.sleep(7)
 
             print("Queries:")
             print("\n".join(internet_queries))
@@ -309,7 +309,7 @@ class AutoResearch():
                 query_data = dict()
                 query_data['query'] = query
                 articles_text, _ = self.search_documents(query)
-
+                articles_text = articles_text[:3]
                 query_data['article_objects'] = articles_text
                 query_data['article_metadata'] = {}
                 print(query)
@@ -326,11 +326,11 @@ class AutoResearch():
             final_summary = self.final_task_analysis(objective, task, article_objs)
             task_data['final_summary'] = final_summary
 
-            time.sleep(8)
+            time.sleep(7)
             summarized_summary = self.clean_up_summaries(sub_summaries)
             task_data['summarized_summary'] = summarized_summary
 
-
+            time.sleep(7)
             tracking[task_id]['results'] = task_data
 
         print(time.time() - t0)
