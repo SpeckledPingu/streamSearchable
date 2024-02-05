@@ -20,7 +20,7 @@ But, it isn't that great for more advanced work. This is pushing the limits of w
 
 In the process, the backend will be refined and will become reSearchable Core and support a more advanced StreamSync UI.
 
-Part of the inspiration for this app was because of the firehose of news and developments during the trump administration. It was a flood of news and developments, and it's part of the reason why I'm still planning to add graphs (so that a researcher can connect people, actions, things like that). So, you'll see "trump" on a number of these, I've been using a dataset I scraped of all of the Secretary of State press releases under the trump administration. I'll upload it and all of Biden's and Obama's in a simplified format so that it's easy to get things set up. Otherwise, you can get it over on Kaggle.
+Part of the inspiration for this app was because of the firehose of news and developments during the trump administration. It was a flood of news and developments, and it's part of the reason why I'm still planning to add graphs (so that a researcher can connect people, actions, things like that). So, you'll see "trump" on a number of these, I've been using a dataset I scraped of all of the Secretary of State press releases under the trump administration. I'll upload it and all of Biden's and Obama's in a simplified format so that it's easy to get things set up. Otherwise, you can get the full version and all the fields over on Kaggle.
 
 [Secretary of State Press Releases: Trump](https://www.kaggle.com/datasets/speckledpingu/secretary-of-state-press-releases-trump/data)
 
